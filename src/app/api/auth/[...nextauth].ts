@@ -1,6 +1,12 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
+import NextAuth, { NextAuthOptions, User as NextAuthUser } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { FakeApiService } from "../../../infrastructure/services/fake-api.services";
 import { JWT } from "next-auth/jwt";
+
+const fakeApiService = new FakeApiService({
+  API_URL: process.env.API_URL!,
+  JWT_SECRET: process.env.JWT_SECRET!,
+});
 
 const options: NextAuthOptions = {
   providers: [
@@ -11,10 +17,21 @@ const options: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        const user = { id: "1", name: "User", email: credentials?.email || "" };
-        if (user) {
-          return user;
-        } else {
+        try {
+          const token = await fakeApiService.login(
+            credentials?.email || "",
+            credentials?.password || ""
+          );
+          if (token) {
+            // Return a user object
+            return {
+              id: "1",
+              name: "Fake User",
+              email: credentials?.email || "",
+            } as NextAuthUser;
+          }
+          return null;
+        } catch (error) {
           return null;
         }
       },
@@ -34,7 +51,7 @@ const options: NextAuthOptions = {
       return token;
     },
     async session({ session, token }: { session: any; token: JWT }) {
-      session.user.id = token.id;
+      session.user.id = token.id as string;
       return session;
     },
   },

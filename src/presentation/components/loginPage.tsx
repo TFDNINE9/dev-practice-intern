@@ -7,28 +7,32 @@ import { signIn } from "next-auth/react";
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleLogin = async () => {
+    setError(null);
     try {
-      const response = await signIn("credentials", {
+      const result = await signIn("credentials", {
         redirect: false,
         email,
         password,
       });
 
-      if (response?.error) {
-        throw new Error(response.error);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        router.push("/dashboard");
       }
-
-      router.push("/dashboard"); // Redirect to the dashboard
     } catch (error) {
       console.error("Login failed", error);
+      setError("An unexpected error occurred.");
     }
   };
 
   return (
     <div>
+      {error && <p>{error}</p>}
       <input
         type="email"
         value={email}
